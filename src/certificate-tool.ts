@@ -1,5 +1,4 @@
 import { KeyVaultClient } from './keyvault-client';
-import { CertificateChainBuilder } from './certificate-chain';
 import { 
   KeyVaultConfig, 
   ChainConfig, 
@@ -14,68 +13,11 @@ import {
  */
 export class CertificateTool {
   private keyVaultClient: KeyVaultClient;
-  private chainBuilder: CertificateChainBuilder;
   private config: KeyVaultConfig;
 
   constructor(config: KeyVaultConfig, authOptions?: AuthOptions) {
     this.config = config;
     this.keyVaultClient = new KeyVaultClient(config, authOptions);
-    this.chainBuilder = new CertificateChainBuilder();
-  }
-
-  /**
-   * Main method to download, chain, and upload a certificate
-   */
-  async processCertificateChain(chainConfig: ChainConfig): Promise<OperationResult> {
-    try {
-      console.log(`Starting certificate chain process for: ${chainConfig.sourceCertificateName}`);
-      
-      // Step 1: Download the source certificate
-      console.log('Step 1: Downloading source certificate...');
-      const sourceCertificate = await this.downloadSourceCertificate(chainConfig.sourceCertificateName);
-      console.log('✓ Source certificate downloaded successfully');
-
-      // Step 2: Get certificate information
-      console.log('Step 2: Getting certificate information...');
-      const certInfo = await this.getCertificateInfo(chainConfig.sourceCertificateName);
-      console.log(`✓ Certificate info retrieved: ${certInfo.subject}`);
-
-      // Step 3: Create certificate chain
-      console.log('Step 3: Creating certificate chain...');
-      const chainedCertificate = await this.createCertificateChain(sourceCertificate, chainConfig);
-      console.log('✓ Certificate chain created successfully');
-
-      // Step 4: Validate the chain
-      console.log('Step 4: Validating certificate chain...');
-      const isValid = await this.validateCertificateChain(chainedCertificate);
-      if (!isValid) {
-        throw new Error('Certificate chain validation failed');
-      }
-      console.log('✓ Certificate chain validation passed');
-
-      // Step 5: Upload the chained certificate
-      console.log('Step 5: Uploading chained certificate...');
-      const uploadResult = await this.uploadChainedCertificate(chainConfig.targetCertificateName, chainedCertificate);
-      if (!uploadResult.success) {
-        throw new Error(uploadResult.message);
-      }
-      console.log('✓ Chained certificate uploaded successfully');
-
-      return {
-        success: true,
-        message: `Certificate chain process completed successfully. New certificate: ${chainConfig.targetCertificateName}`,
-        certificateName: chainConfig.targetCertificateName
-      };
-
-    } catch (error) {
-      const errorMessage = `Certificate chain process failed: ${error}`;
-      console.error('❌', errorMessage);
-      return {
-        success: false,
-        message: errorMessage,
-        error: error as Error
-      };
-    }
   }
 
   /**
@@ -97,56 +39,6 @@ export class CertificateTool {
       return await this.keyVaultClient.getCertificateInfo(certificateName);
     } catch (error) {
       throw new Error(`Failed to get certificate info for ${certificateName}: ${error}`);
-    }
-  }
-
-  /**
-   * Create the certificate chain
-   */
-  private async createCertificateChain(
-    sourceCertificate: CertificateData, 
-    chainConfig: ChainConfig
-  ): Promise<CertificateData> {
-    try {
-      return await this.chainBuilder.createCertificateChain(sourceCertificate, chainConfig);
-    } catch (error) {
-      throw new Error(`Failed to create certificate chain: ${error}`);
-    }
-  }
-
-  /**
-   * Validate the certificate chain
-   */
-  private async validateCertificateChain(certificateData: CertificateData): Promise<boolean> {
-    try {
-      if (!certificateData.chain || certificateData.chain.length === 0) {
-        console.warn('No certificate chain to validate');
-        return true; // Single certificate is valid
-      }
-
-      // Parse certificates for validation
-      const certificates = certificateData.chain.map(pem => 
-        this.chainBuilder['parsePemCertificate'](pem)
-      );
-
-      return await this.chainBuilder.validateCertificateChain(certificates);
-    } catch (error) {
-      console.error(`Certificate chain validation error: ${error}`);
-      return false;
-    }
-  }
-
-  /**
-   * Upload the chained certificate to Key Vault
-   */
-  private async uploadChainedCertificate(
-    certificateName: string, 
-    certificateData: CertificateData
-  ): Promise<OperationResult> {
-    try {
-      return await this.keyVaultClient.uploadCertificate(certificateName, certificateData);
-    } catch (error) {
-      throw new Error(`Failed to upload chained certificate ${certificateName}: ${error}`);
     }
   }
 

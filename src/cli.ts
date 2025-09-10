@@ -21,46 +21,6 @@ program
   .option('--use-client-secret', 'Use client secret for authentication')
   .option('--verbose', 'Enable verbose logging');
 
-// Chain command
-program
-  .command('chain')
-  .description('Create a certificate chain from a source certificate')
-  .requiredOption('-s, --source <name>', 'Source certificate name')
-  .requiredOption('-t, --target <name>', 'Target certificate name')
-  .option('-i, --intermediate <certs...>', 'Intermediate certificates (PEM format)')
-  .option('-r, --root <certs...>', 'Root certificates (PEM format)')
-  .option('--validity-days <days>', 'Certificate validity period in days', '365')
-  .action(async (options) => {
-    try {
-      const config = getKeyVaultConfig(program.opts());
-      const authOptions = getAuthOptions(program.opts());
-      
-      const tool = new CertificateTool(config, authOptions);
-      
-      const chainConfig: ChainConfig = {
-        sourceCertificateName: options.source,
-        targetCertificateName: options.target,
-        intermediateCertificates: options.intermediate,
-        rootCertificates: options.root,
-        validityPeriodDays: parseInt(options.validityDays)
-      };
-
-      console.log('🔗 Starting certificate chain creation...');
-      const result = await tool.processCertificateChain(chainConfig);
-      
-      if (result.success) {
-        console.log('✅', result.message);
-        process.exit(0);
-      } else {
-        console.error('❌', result.message);
-        process.exit(1);
-      }
-    } catch (error) {
-      console.error('❌ Error:', error);
-      process.exit(1);
-    }
-  });
-
 // List command
 program
   .command('list')

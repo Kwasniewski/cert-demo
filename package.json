@@ -1,7 +1,7 @@
 {
-  "name": "azure-cert-chain-tool",
+  "name": "azure-cert-demo",
   "version": "1.0.0",
-  "description": "Tool to download certificates from Azure Key Vault, create chained certificates, and upload them back",
+  "description": "Tool to download certificates from Azure Key Vault",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -9,8 +9,6 @@
     "dev": "ts-node src/index.ts",
     "clean": "rm -rf dist",
     "setup": "./setup.sh",
-    "example:basic": "ts-node examples/basic-usage.ts",
-    "example:advanced": "ts-node examples/advanced-usage.ts",
     "example:download-with-private-key": "ts-node examples/download-with-private-key.ts",
     "example:auth-methods": "ts-node examples/authentication-methods.ts",
     "test:connection": "npm run dev -- test",
