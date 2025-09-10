@@ -5,7 +5,11 @@ import {
   OperationResult, 
   CertificateData, 
   CertificateInfo,
-  AuthOptions 
+  AuthOptions,
+  RootCAConfig,
+  IntermediateCAConfig,
+  EndEntityCertConfig,
+  CertificateCreationResult
 } from './types';
 
 /**
@@ -112,5 +116,38 @@ export class CertificateTool {
   updateConfig(newConfig: Partial<KeyVaultConfig>): void {
     this.config = { ...this.config, ...newConfig };
     this.keyVaultClient = new KeyVaultClient(this.config);
+  }
+
+  /**
+   * Create a new root CA certificate
+   */
+  async createRootCA(config: RootCAConfig): Promise<CertificateCreationResult> {
+    try {
+      return await this.keyVaultClient.createRootCA(config);
+    } catch (error) {
+      throw new Error(`Failed to create root CA ${config.name}: ${error}`);
+    }
+  }
+
+  /**
+   * Create a new intermediate CA certificate
+   */
+  async createIntermediateCA(config: IntermediateCAConfig): Promise<CertificateCreationResult> {
+    try {
+      return await this.keyVaultClient.createIntermediateCA(config);
+    } catch (error) {
+      throw new Error(`Failed to create intermediate CA ${config.name}: ${error}`);
+    }
+  }
+
+  /**
+   * Create a new end-entity certificate
+   */
+  async createEndEntityCertificate(config: EndEntityCertConfig): Promise<CertificateCreationResult> {
+    try {
+      return await this.keyVaultClient.createEndEntityCertificate(config);
+    } catch (error) {
+      throw new Error(`Failed to create end-entity certificate ${config.name}: ${error}`);
+    }
   }
 }

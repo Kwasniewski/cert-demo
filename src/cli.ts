@@ -2,7 +2,7 @@
 
 import { Command } from 'commander';
 import { CertificateTool } from './certificate-tool';
-import { KeyVaultConfig, ChainConfig, AuthOptions } from './types';
+import { KeyVaultConfig, ChainConfig, AuthOptions, RootCAConfig, IntermediateCAConfig, EndEntityCertConfig } from './types';
 
 const program = new Command();
 
@@ -144,6 +144,138 @@ program
     }
   });
 
+// Create Root CA command
+program
+  .command('create-root-ca')
+  .description('Create a new root CA certificate')
+  .requiredOption('-n, --name <name>', 'Certificate name')
+  .requiredOption('-s, --subject <subject>', 'Certificate subject (e.g., "CN=My Root CA,O=My Company,C=US")')
+  .option('--key-size <size>', 'Key size in bits', '4096')
+  .option('--validity-days <days>', 'Validity period in days', '3650')
+  .option('--path-length <length>', 'Maximum path length for intermediate CAs', '0')
+  .action(async (options) => {
+    try {
+      const config = getKeyVaultConfig(program.opts());
+      const authOptions = getAuthOptions(program.opts());
+      
+      const tool = new CertificateTool(config, authOptions);
+      
+      console.log(`🔐 Creating root CA: ${options.name}`);
+      const result = await tool.createRootCA({
+        name: options.name,
+        subject: options.subject,
+        keySize: parseInt(options.keySize),
+        validityDays: parseInt(options.validityDays),
+        pathLength: parseInt(options.pathLength)
+      });
+      
+      if (result.success) {
+        console.log('✅', result.message);
+        console.log(`   Thumbprint: ${result.thumbprint}`);
+        console.log(`   Certificate name: ${result.certificateName}`);
+      } else {
+        console.error('❌', result.message);
+        process.exit(1);
+      }
+    } catch (error) {
+      console.error('❌ Error:', error);
+      process.exit(1);
+    }
+  });
+
+// Create Intermediate CA command
+program
+  .command('create-intermediate-ca')
+  .description('Create a new intermediate CA certificate')
+  .requiredOption('-n, --name <name>', 'Certificate name')
+  .requiredOption('-s, --subject <subject>', 'Certificate subject (e.g., "CN=My Intermediate CA,O=My Company,C=US")')
+  .requiredOption('-i, --issuer <issuer>', 'Name of the root CA in Key Vault')
+  .option('--key-size <size>', 'Key size in bits', '4096')
+  .option('--validity-days <days>', 'Validity period in days', '1825')
+  .option('--path-length <length>', 'Maximum path length for end-entity certificates', '0')
+  .action(async (options) => {
+    try {
+      const config = getKeyVaultConfig(program.opts());
+      const authOptions = getAuthOptions(program.opts());
+      
+      const tool = new CertificateTool(config, authOptions);
+      
+      console.log(`🔗 Creating intermediate CA: ${options.name}`);
+      console.log(`   Issued by: ${options.issuer}`);
+      const result = await tool.createIntermediateCA({
+        name: options.name,
+        subject: options.subject,
+        issuerCA: options.issuer,
+        keySize: parseInt(options.keySize),
+        validityDays: parseInt(options.validityDays),
+        pathLength: parseInt(options.pathLength)
+      });
+      
+      if (result.success) {
+        console.log('✅', result.message);
+        console.log(`   Thumbprint: ${result.thumbprint}`);
+        console.log(`   Certificate name: ${result.certificateName}`);
+      } else {
+        console.error('❌', result.message);
+        process.exit(1);
+      }
+    } catch (error) {
+      console.error('❌ Error:', error);
+      process.exit(1);
+    }
+  });
+
+// Create End-Entity Certificate command
+program
+  .command('create-cert')
+  .description('Create a new end-entity certificate')
+  .requiredOption('-n, --name <name>', 'Certificate name')
+  .requiredOption('-s, --subject <subject>', 'Certificate subject (e.g., "CN=example.com,O=My Company,C=US")')
+  .requiredOption('-i, --issuer <issuer>', 'Name of the intermediate CA in Key Vault')
+  .option('--key-size <size>', 'Key size in bits', '2048')
+  .option('--validity-days <days>', 'Validity period in days', '365')
+  .option('--san <sans>', 'Subject Alternative Names (comma-separated)', '')
+  .option('--extended-key-usage <usage>', 'Extended key usage (comma-separated: serverAuth,clientAuth,codeSigning)', 'serverAuth,clientAuth')
+  .action(async (options) => {
+    try {
+      const config = getKeyVaultConfig(program.opts());
+      const authOptions = getAuthOptions(program.opts());
+      
+      const tool = new CertificateTool(config, authOptions);
+      
+      console.log(`📜 Creating end-entity certificate: ${options.name}`);
+      console.log(`   Issued by: ${options.issuer}`);
+      
+      const sanList = options.san ? options.san.split(',').map((s: string) => s.trim()) : undefined;
+      const extendedKeyUsage = options.extendedKeyUsage ? options.extendedKeyUsage.split(',').map((s: string) => s.trim()) : ['serverAuth', 'clientAuth'];
+      
+      const result = await tool.createEndEntityCertificate({
+        name: options.name,
+        subject: options.subject,
+        issuerCA: options.issuer,
+        keySize: parseInt(options.keySize),
+        validityDays: parseInt(options.validityDays),
+        san: sanList,
+        extendedKeyUsage: extendedKeyUsage
+      });
+      
+      if (result.success) {
+        console.log('✅', result.message);
+        console.log(`   Thumbprint: ${result.thumbprint}`);
+        console.log(`   Certificate name: ${result.certificateName}`);
+        if (sanList && sanList.length > 0) {
+          console.log(`   SAN: ${sanList.join(', ')}`);
+        }
+      } else {
+        console.error('❌', result.message);
+        process.exit(1);
+      }
+    } catch (error) {
+      console.error('❌ Error:', error);
+      process.exit(1);
+    }
+  });
+
 // Helper functions
 function getKeyVaultConfig(options: any): KeyVaultConfig {
   const config: KeyVaultConfig = {
@@ -156,12 +288,6 @@ function getKeyVaultConfig(options: any): KeyVaultConfig {
   // Validate required fields
   if (!config.vaultUrl) {
     throw new Error('Key Vault URL is required. Use --vault-url or set AZURE_KEY_VAULT_URL environment variable.');
-  }
-  if (!config.tenantId) {
-    throw new Error('Tenant ID is required. Use --tenant-id or set AZURE_TENANT_ID environment variable.');
-  }
-  if (!config.clientId) {
-    throw new Error('Client ID is required. Use --client-id or set AZURE_CLIENT_ID environment variable.');
   }
 
   return config;

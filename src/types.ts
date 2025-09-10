@@ -73,3 +73,61 @@ export interface AuthOptions {
   certificateThumbprint?: string;
   certificatePath?: string;
 }
+
+/**
+ * Certificate creation configuration
+ */
+export interface CertificateCreationConfig {
+  name: string;
+  subject: string;
+  issuer?: string; // For intermediate and end-entity certificates
+  keySize?: number;
+  validityDays?: number;
+  keyUsage?: string[];
+  extendedKeyUsage?: string[];
+  san?: string[]; // Subject Alternative Names
+  isCA?: boolean;
+  pathLength?: number; // For CA certificates
+}
+
+/**
+ * Root CA creation configuration
+ */
+export interface RootCAConfig extends CertificateCreationConfig {
+  name: string;
+  subject: string;
+  keySize?: number;
+  validityDays?: number;
+}
+
+/**
+ * Intermediate CA creation configuration
+ */
+export interface IntermediateCAConfig extends CertificateCreationConfig {
+  name: string;
+  subject: string;
+  issuerCA: string; // Name of the root CA in Key Vault
+  keySize?: number;
+  validityDays?: number;
+}
+
+/**
+ * End-entity certificate creation configuration
+ */
+export interface EndEntityCertConfig extends CertificateCreationConfig {
+  name: string;
+  subject: string;
+  issuerCA: string; // Name of the intermediate CA in Key Vault
+  keySize?: number;
+  validityDays?: number;
+  san?: string[];
+}
+
+/**
+ * Certificate creation result
+ */
+export interface CertificateCreationResult extends OperationResult {
+  certificateName: string;
+  certificateData?: CertificateData;
+  thumbprint?: string;
+}

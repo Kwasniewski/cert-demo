@@ -11,6 +11,7 @@
     "setup": "./setup.sh",
     "example:download-with-private-key": "ts-node examples/download-with-private-key.ts",
     "example:auth-methods": "ts-node examples/authentication-methods.ts",
+    "example:cert-creation": "ts-node examples/certificate-creation.ts",
     "test:connection": "npm run dev -- test",
     "list:certs": "npm run dev -- list"
   },

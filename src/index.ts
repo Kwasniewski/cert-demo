@@ -20,5 +20,4 @@ import './cli';
 // Export main classes for programmatic use
 export { CertificateTool } from './certificate-tool';
 export { KeyVaultClient } from './keyvault-client';
-export { CertificateChainBuilder } from './certificate-chain';
 export * from './types';
