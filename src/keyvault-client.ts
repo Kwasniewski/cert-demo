@@ -230,7 +230,18 @@ export class KeyVaultClient {
         keyUsage: ['digitalSignature', 'keyEncipherment'],
         validityInMonths: 12
       };
-      const cert = Buffer.from(certificateData.privateKey + certificateData.certificate, 'base64');
+      const p12Asn1 = forge.pkcs12.toPkcs12Asn1(
+        certificateData.privateKey ? forge.pki.privateKeyFromPem(certificateData.privateKey) : null,
+        certificateData.certificate ? [forge.pki.certificateFromPem(certificateData.certificate)] : [],
+        '',
+        {
+            algorithm: '3des' // You can choose other algorithms like 'aes256'
+        }
+      );
+
+      // Convert to DER format (binary)
+      const p12Der = forge.asn1.toDer(p12Asn1).getBytes();
+      const cert = new Uint8Array(Buffer.from(p12Der, 'binary'));
       // Import the certificate
       const result = await this.certificateClient.importCertificate(certificateName, cert, certPolicy);
       
