@@ -102,7 +102,6 @@ export class KeyVaultClient {
       try {
         const privateKey = await this.getPrivateKeyFromSecret(certificateName, version);
         if (privateKey) {
-          console.log('Private key:', privateKey);
           result.privateKey = privateKey;
         }
       } catch (error) {
@@ -174,7 +173,6 @@ export class KeyVaultClient {
       // If we found a private key, convert it to PEM format
       if (privateKey) {
         const privateKeyPem = forge.pki.privateKeyToPem(privateKey);
-        console.log('Successfully extracted private key in PEM format');
         return privateKeyPem;
       }
       
@@ -487,7 +485,7 @@ export class KeyVaultClient {
       
       // Sign the certificate with the issuer's private key
       cert.sign(issuerPrivateKey);
-      
+
       // Convert to PEM format
       const pemCert = forge.pki.certificateToPem(cert);
       const pemKey = forge.pki.privateKeyToPem(keyPair.privateKey);
@@ -603,7 +601,7 @@ export class KeyVaultClient {
       
       // Sign the certificate with the issuer's private key
       cert.sign(issuerPrivateKey);
-      
+
       // Convert to PEM format
       const pemCert = forge.pki.certificateToPem(cert);
       const pemKey = forge.pki.privateKeyToPem(keyPair.privateKey);
